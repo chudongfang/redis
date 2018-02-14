@@ -41,7 +41,6 @@
 #define STREAM_ITEM_FLAG_SAMEFIELDS (1<<1)  /* Same fields as master entry. */
 
 void streamFreeCG(streamCG *cg);
-streamNACK *streamCreateNACK(streamConsumer *consumer);
 size_t streamReplyWithRangeFromConsumerPEL(client *c, stream *s, streamID *start, streamID *end, size_t count, streamCG *group, streamConsumer *consumer);
 
 /* -----------------------------------------------------------------------
@@ -1301,7 +1300,7 @@ void streamFreeConsumer(streamConsumer *sc) {
  * specified name and last server ID. If a consumer group with the same name
  * already existed NULL is returned, otherwise the pointer to the consumer
  * group is returned. */
-streamCG *streamCreateCG(stream *s, char *name, size_t namelen, streamID id) {
+streamCG *streamCreateCG(stream *s, char *name, size_t namelen, streamID *id) {
     if (s->cgroups == NULL) s->cgroups = raxNew();
     if (raxFind(s->cgroups,(unsigned char*)name,namelen) != raxNotFound)
         return NULL;
@@ -1309,7 +1308,7 @@ streamCG *streamCreateCG(stream *s, char *name, size_t namelen, streamID id) {
     streamCG *cg = zmalloc(sizeof(*cg));
     cg->pel = raxNew();
     cg->consumers = raxNew();
-    cg->last_id = id;
+    cg->last_id = *id;
     raxInsert(s->cgroups,(unsigned char*)name,namelen,cg,NULL);
     return cg;
 }
@@ -1385,7 +1384,7 @@ NULL
         } else if (streamParseIDOrReply(c,c->argv[4],&id,0) != C_OK) {
             return;
         }
-        streamCG *cg = streamCreateCG(s,grpname,sdslen(grpname),id);
+        streamCG *cg = streamCreateCG(s,grpname,sdslen(grpname),&id);
         if (cg) {
             addReply(c,shared.ok);
         } else {
