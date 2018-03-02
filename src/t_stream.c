@@ -1767,6 +1767,7 @@ void xclaimCommand(client *c) {
 
             /* Create the NACK. */
             nack = streamCreateNACK(NULL);
+            raxInsert(group->pel,buf,sizeof(buf),nack,NULL);
         }
 
         if (nack != raxNotFound) {
